@@ -1,11 +1,15 @@
 from datetime import datetime, timezone
 from decimal import Decimal
+import uuid
 import pytest
 from polymarket_trades.domain.entities.market import Market
 from polymarket_trades.domain.entities.event import Event
+from polymarket_trades.domain.entities.position import Position
 from polymarket_trades.domain.value_objects.price import Price
 from polymarket_trades.domain.value_objects.token_id import TokenId
 from polymarket_trades.domain.value_objects.outcome import Outcome, Side
+from polymarket_trades.domain.value_objects.trade_mode import TradeMode, PositionStatus
+from polymarket_trades.domain.value_objects.resolution_outcome import ResolutionOutcome
 
 
 def make_market(**overrides) -> Market:
@@ -104,3 +108,67 @@ class TestEvent:
         markets = [make_market(id=f"m{i}") for i in range(4)]
         e = make_event(markets=markets, neg_risk=False)
         assert e.is_multi_outcome is False
+
+
+class TestPosition:
+    def _make_position(self, **overrides) -> Position:
+        now = datetime(2026, 3, 13, 12, 0, tzinfo=timezone.utc)
+        defaults = {
+            "id": uuid.uuid4(), "opportunity_type": "near_certain", "market_id": "market-1",
+            "token_id": TokenId("0xyes"), "side": Side.YES, "event_title": "Test Event",
+            "entry_price": Decimal("0.96"), "quantity": Decimal("50"),
+            "detected_at": now, "entry_time": now, "current_price": Decimal("0.96"),
+            "resolution_outcome": None, "exit_price": None, "pnl": None,
+            "fees_estimated": Decimal("0.10"), "mode": TradeMode.PAPER, "status": PositionStatus.ENTERED,
+        }
+        defaults.update(overrides)
+        return Position(**defaults)
+
+    def test_create_position(self):
+        p = self._make_position()
+        assert p.opportunity_type == "near_certain"
+        assert p.status == PositionStatus.ENTERED
+        assert p.side == Side.YES
+
+    def test_is_open(self):
+        p = self._make_position(status=PositionStatus.MONITORING)
+        assert p.is_open is True
+
+    def test_is_not_open_when_resolved(self):
+        p = self._make_position(status=PositionStatus.RESOLVED)
+        assert p.is_open is False
+
+    def test_resolve_yes_side_wins_on_yes_outcome(self):
+        p = self._make_position(side=Side.YES, entry_price=Decimal("0.96"), quantity=Decimal("50"), fees_estimated=Decimal("0.10"))
+        p.resolve(ResolutionOutcome.YES)
+        assert p.status == PositionStatus.PNL_CALCULATED
+        assert p.exit_price == Decimal("1.0")
+        assert p.pnl == Decimal("1.90")  # (1.0-0.96)*50 - 0.10
+
+    def test_resolve_yes_side_loses_on_no_outcome(self):
+        p = self._make_position(side=Side.YES, entry_price=Decimal("0.96"), quantity=Decimal("50"), fees_estimated=Decimal("0.10"))
+        p.resolve(ResolutionOutcome.NO)
+        assert p.exit_price == Decimal("0")
+        assert p.pnl == Decimal("-48.10")
+
+    def test_resolve_no_side_wins_on_no_outcome(self):
+        p = self._make_position(side=Side.NO, entry_price=Decimal("0.30"), quantity=Decimal("50"), fees_estimated=Decimal("0.10"))
+        p.resolve(ResolutionOutcome.NO)
+        assert p.exit_price == Decimal("1.0")
+        assert p.pnl == Decimal("34.90")
+
+    def test_resolve_no_side_loses_on_yes_outcome(self):
+        p = self._make_position(side=Side.NO, entry_price=Decimal("0.30"), quantity=Decimal("50"), fees_estimated=Decimal("0.10"))
+        p.resolve(ResolutionOutcome.YES)
+        assert p.exit_price == Decimal("0")
+        assert p.pnl == (Decimal("0") - Decimal("0.30")) * Decimal("50") - Decimal("0.10")
+
+    def test_resolve_invalid(self):
+        p = self._make_position(entry_price=Decimal("0.96"), quantity=Decimal("50"))
+        p.resolve(ResolutionOutcome.INVALID)
+        assert p.exit_price == Decimal("0.96")
+        assert p.pnl == Decimal("0")
+
+    def test_notional_value(self):
+        p = self._make_position(entry_price=Decimal("0.96"), quantity=Decimal("50"))
+        assert p.notional_value == Decimal("48.00")
