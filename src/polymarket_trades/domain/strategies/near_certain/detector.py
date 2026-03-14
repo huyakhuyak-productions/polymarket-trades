@@ -1,0 +1,58 @@
+from __future__ import annotations
+from decimal import Decimal
+from polymarket_trades.domain.entities.event import Event
+from polymarket_trades.domain.services.fee_calculator import FeeCalculator, MarketCategory
+from polymarket_trades.domain.strategies.near_certain.opportunity import NearCertainOpportunity
+from polymarket_trades.domain.value_objects.money import Money
+
+
+class NearCertainDetector:
+    def __init__(
+        self,
+        fee_calculator: FeeCalculator,
+        price_threshold: Decimal = Decimal("0.95"),
+        min_profit_threshold: Money = Money(Decimal("0.005")),
+        min_liquidity: Decimal = Decimal("100"),
+        min_minutes_to_close: int = 60,
+    ) -> None:
+        self._fee_calc = fee_calculator
+        self._threshold = price_threshold
+        self._min_profit = min_profit_threshold
+        self._min_liquidity = min_liquidity
+        self._min_minutes = min_minutes_to_close
+
+    async def detect(self, events: list[Event]) -> list[NearCertainOpportunity]:
+        opportunities: list[NearCertainOpportunity] = []
+        for event in events:
+            for market in event.tradeable_markets:
+                if market.yes_price.value < self._threshold:
+                    continue
+                if market.minutes_to_close < self._min_minutes:
+                    continue
+                if market.liquidity < self._min_liquidity:
+                    continue
+                category = MarketCategory.from_string(market.category)
+                fee = self._fee_calc.estimate(
+                    price=market.yes_price,
+                    quantity=Decimal("1"),
+                    category=category,
+                    is_maker=False,
+                )
+                profit_per_share = Decimal("1.0") - market.yes_price.value - fee.value
+                if profit_per_share <= self._min_profit.value:
+                    continue
+                opportunities.append(
+                    NearCertainOpportunity(
+                        strategy_type="near_certain",
+                        market_id=market.id,
+                        token_id=market.yes_token_id.value,
+                        event_title=event.title,
+                        expected_profit=Money(profit_per_share),
+                        entry_price=market.yes_price.value,
+                        market_liquidity=market.liquidity,
+                        minutes_to_close=market.minutes_to_close,
+                        yes_price=market.yes_price.value,
+                        expected_return_pct=profit_per_share / market.yes_price.value * 100,
+                    )
+                )
+        return opportunities
