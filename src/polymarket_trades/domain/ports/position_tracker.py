@@ -1,0 +1,16 @@
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from polymarket_trades.domain.entities.position import Position
+from polymarket_trades.domain.value_objects.trade_mode import TradeMode
+
+class PositionTrackerPort(ABC):
+    @abstractmethod
+    async def save_position(self, position: Position) -> None: ...
+    @abstractmethod
+    async def get_open_positions(self) -> list[Position]: ...
+    @abstractmethod
+    async def get_position_by_market(self, market_id: str) -> Position | None: ...
+    @abstractmethod
+    async def update_position(self, position: Position) -> None: ...
+    @abstractmethod
+    async def get_all_positions(self, mode: TradeMode | None = None) -> list[Position]: ...
