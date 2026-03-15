@@ -19,17 +19,20 @@ class ScanOpportunities:
         opportunity_store: OpportunityStorePort,
         position_tracker: PositionTrackerPort,
         page_size: int = 100,
+        max_pages: int = 10,
     ) -> None:
         self._events = event_discovery
         self._scanner = scanner
         self._opp_store = opportunity_store
         self._pos_tracker = position_tracker
         self._page_size = page_size
+        self._max_pages = max_pages
 
     async def execute(self) -> list[Opportunity]:
         all_events = []
         offset = 0
-        while True:
+        pages_fetched = 0
+        while pages_fetched < self._max_pages:
             page = await self._events.fetch_active_events(
                 limit=self._page_size, offset=offset
             )
@@ -37,6 +40,7 @@ class ScanOpportunities:
                 break
             all_events.extend(page)
             offset += self._page_size
+            pages_fetched += 1
 
         logger.info("events_fetched", count=len(all_events))
         raw_opps = await self._scanner.scan(all_events)

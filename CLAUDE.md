@@ -18,13 +18,17 @@ Clean Architecture + DDD + TDD. Three layers:
 - TDD: write failing tests first, then implement
 
 ## Running
-- Tests: `pytest`
-- Bot (paper): `python -m polymarket_trades run --dry-run`
-- Bot (live): `python -m polymarket_trades run --live`
-- Report: `python -m polymarket_trades report`
+- Tests: `uv run pytest`
+- Bot (paper): `uv run python -m polymarket_trades run --dry-run`
+- Bot (live): `uv run python -m polymarket_trades run --live`
+- Report: `uv run python -m polymarket_trades report`
 
 ## Package Manager
-Python with pip. No lockfile yet — use `pip install --editable ".[dev]"`.
+**uv** — always use `uv` for package management. Never use `pip` directly.
+- Install/sync: `uv sync`
+- Add dependency: `uv add <package>`
+- Add dev dependency: `uv add --dev <package>`
+- Run anything: `uv run <command>`
 
 ## APIs
 - Gamma API (`gamma-api.polymarket.com`) — event/market discovery, no auth
