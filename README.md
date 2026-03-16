@@ -88,3 +88,18 @@ To trade with real money, pass `--live` explicitly. This requires a funded Polym
 3. Register in `src/polymarket_trades/application/container.py`
 
 Three files to add, zero files to modify.
+
+## Deployment
+
+Works with Dokku, Coolify, or any herokuish-compatible platform. The Python buildpack detects `uv.lock` and uses `uv` natively.
+
+```bash
+# Dokku
+dokku apps:create polymarket-trades
+dokku storage:ensure-directory polymarket-trades
+dokku storage:mount polymarket-trades /var/lib/dokku/data/storage/polymarket-trades:/app/data
+dokku config:set polymarket-trades TRADE_MODE=PAPER TOTAL_CAPITAL=1000
+git push dokku main
+```
+
+Set `DATA_DIR` to control where the SQLite database is stored (default: `data/`). Mount a persistent volume at that path so data survives restarts.

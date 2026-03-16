@@ -25,3 +25,4 @@ class Settings(BaseSettings):
     clob_base_url: str = "https://clob.polymarket.com"
     gamma_page_size: int = 100
     rate_limit_requests_per_second: int = 10
+    data_dir: str = "data"

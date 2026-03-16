@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
+from pathlib import Path
 
 import aiosqlite
+from py_clob_client.client import ClobClient as SdkClient
 
 from polymarket_trades.application.use_cases.execute_trade import ExecuteTrade
 from polymarket_trades.application.use_cases.monitor_positions import MonitorPositions
@@ -62,13 +64,17 @@ class Container:
 
 async def build_container(
     settings: Settings | None = None,
-    db_path: str = "polymarket_trades.db",
+    db_path: str | None = None,
 ) -> Container:
     """Build and wire all dependencies."""
     if settings is None:
         settings = Settings()
 
-    # Database
+    # Database — stored in configurable data_dir for volume mounts
+    if db_path is None:
+        data_dir = Path(settings.data_dir)
+        data_dir.mkdir(parents=True, exist_ok=True)
+        db_path = str(data_dir / "polymarket_trades.db")
     db = await aiosqlite.connect(db_path)
     await run_migrations(db)
 
@@ -83,8 +89,6 @@ async def build_container(
     pricing: PricingPort | None = None
     if settings.polymarket_private_key:
         try:
-            from py_clob_client.client import ClobClient as SdkClient
-
             sdk = SdkClient(
                 settings.clob_base_url,
                 key=settings.polymarket_private_key,
