@@ -32,6 +32,7 @@ class Position:
     fees_estimated: Decimal
     mode: TradeMode
     status: PositionStatus
+    event_slug: str = ""
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 

@@ -51,6 +51,7 @@ class ArbitrageDetector:
                         event_title=event.title,
                         expected_profit=Money(profit_per_share),
                         entry_price=total_cost,
+                        event_slug=event.slug,
                         no_token_id=market.no_token_id.value,
                         yes_ask=yes_ask,
                         no_ask=no_ask,

@@ -49,6 +49,7 @@ class NearCertainDetector:
                         event_title=event.title,
                         expected_profit=Money(profit_per_share),
                         entry_price=market.yes_price.value,
+                        event_slug=event.slug,
                         market_liquidity=market.liquidity,
                         minutes_to_close=market.minutes_to_close,
                         yes_price=market.yes_price.value,

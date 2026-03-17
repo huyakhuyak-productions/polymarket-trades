@@ -51,6 +51,7 @@ class NegRiskDiscountDetector:
                     event_title=event.title,
                     expected_profit=Money(profit_per_unit),
                     entry_price=total_cost,
+                    event_slug=event.slug,
                     total_cost=total_cost,
                     num_outcomes=len(tradeable),
                     leg_token_ids=[m.yes_token_id.value for m in tradeable],

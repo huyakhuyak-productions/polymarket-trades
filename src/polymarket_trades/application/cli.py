@@ -153,12 +153,19 @@ def positions(
             table.add_column("P&L", justify="right")
             table.add_column("Status")
             table.add_column("Mode")
+            table.add_column("Link", style="blue")
 
             for pos in all_positions:
                 pnl_str = ""
                 if pos.pnl is not None:
                     pnl_style = "green" if pos.pnl >= 0 else "red"
                     pnl_str = f"[{pnl_style}]{pos.pnl:.4f}[/{pnl_style}]"
+
+                link = (
+                    f"https://polymarket.com/event/{pos.event_slug}"
+                    if pos.event_slug
+                    else ""
+                )
 
                 table.add_row(
                     str(pos.id)[:8],
@@ -167,13 +174,83 @@ def positions(
                     pos.side.value,
                     str(pos.entry_price),
                     str(pos.current_price),
-                    str(pos.quantity),
+                    f"{pos.quantity:.2f}",
                     pnl_str,
                     pos.status.value,
                     pos.mode.value,
+                    link,
                 )
             console.print(table)
         finally:
             await close_container(container)
 
     asyncio.run(_positions())
+
+
+@app.command(name="backfill-slugs")
+def backfill_slugs(
+    log_level: str = typer.Option("WARNING", "--log-level", help="Logging level"),
+) -> None:
+    """Backfill event_slug for positions that are missing it (one-time migration)."""
+    configure_logging(log_level=log_level)
+
+    async def _backfill() -> None:
+        container = await build_container(settings=Settings(log_level=log_level))
+        try:
+            gamma = container._gamma_client
+            if gamma is None:
+                console.print("[red]Gamma client not available.[/red]")
+                return
+
+            all_positions = await container.position_tracker.get_all_positions()
+            missing = [p for p in all_positions if not p.event_slug]
+            if not missing:
+                console.print("[green]All positions already have event slugs.[/green]")
+                return
+
+            console.print(f"Found {len(missing)} positions missing event_slug.")
+
+            # Group by (strategy, market_id) to minimize API calls
+            seen: dict[str, str] = {}
+            updated = 0
+            errors = 0
+
+            for pos in missing:
+                if pos.market_id in seen:
+                    slug = seen[pos.market_id]
+                else:
+                    try:
+                        if pos.opportunity_type == "neg_risk_discount":
+                            event = await gamma.fetch_event_by_id(pos.market_id)
+                            slug = event.slug
+                        else:
+                            slug = await gamma.fetch_event_slug_for_market(pos.market_id)
+                        seen[pos.market_id] = slug
+                    except Exception as exc:
+                        console.print(
+                            f"[yellow]Failed to fetch slug for {pos.market_id}: {exc}[/yellow]"
+                        )
+                        errors += 1
+                        continue
+
+                if slug:
+                    await container.position_tracker.update_event_slug(
+                        str(pos.id), slug
+                    )
+                    updated += 1
+                    console.print(
+                        f"  [green]Updated[/green] {str(pos.id)[:8]} → {slug}"
+                    )
+                else:
+                    console.print(
+                        f"  [yellow]No slug found for {str(pos.id)[:8]} (market_id={pos.market_id})[/yellow]"
+                    )
+
+            console.print(
+                f"\n[bold]Done:[/bold] {updated} updated, {errors} errors, "
+                f"{len(missing) - updated - errors} no slug found."
+            )
+        finally:
+            await close_container(container)
+
+    asyncio.run(_backfill())

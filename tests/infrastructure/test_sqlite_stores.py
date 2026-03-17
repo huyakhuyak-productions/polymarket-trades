@@ -50,6 +50,7 @@ def _make_position(**overrides):
         "token_id": TokenId("0xyes"),
         "side": Side.YES,
         "event_title": "Test",
+        "event_slug": "test-event",
         "entry_price": Decimal("0.96"),
         "quantity": Decimal("50"),
         "detected_at": now,
@@ -114,6 +115,15 @@ class TestSqliteOpportunityStore:
         found = await store.find_existing("near_certain", "m1", "0xyes")
         assert found is not None
         assert found.entry_price == Decimal("0.96")
+
+    @pytest.mark.asyncio
+    async def test_event_slug_roundtrip(self, db):
+        store = SqliteOpportunityStore(db)
+        opp = _make_opportunity(event_slug="test-slug")
+        await store.save(opp)
+        found = await store.find_existing("near_certain", "m1", "0xyes")
+        assert found is not None
+        assert found.event_slug == "test-slug"
 
 
 class TestSqlitePositionTracker:
@@ -184,3 +194,20 @@ class TestSqlitePositionTracker:
         assert loaded.quantity == pos.quantity
         assert loaded.fees_estimated == pos.fees_estimated
         assert loaded.mode == pos.mode
+        assert loaded.event_slug == pos.event_slug
+
+    @pytest.mark.asyncio
+    async def test_event_slug_roundtrip(self, db):
+        tracker = SqlitePositionTracker(db)
+        pos = _make_position(event_slug="will-trump-win-2028")
+        await tracker.save_position(pos)
+        loaded = await tracker.get_position_by_market("m1")
+        assert loaded.event_slug == "will-trump-win-2028"
+
+    @pytest.mark.asyncio
+    async def test_event_slug_defaults_to_empty(self, db):
+        tracker = SqlitePositionTracker(db)
+        pos = _make_position()
+        await tracker.save_position(pos)
+        loaded = await tracker.get_position_by_market("m1")
+        assert loaded.event_slug == "test-event"

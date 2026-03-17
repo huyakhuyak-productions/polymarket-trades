@@ -116,6 +116,7 @@ class TestPosition:
         defaults = {
             "id": uuid.uuid4(), "opportunity_type": "near_certain", "market_id": "market-1",
             "token_id": TokenId("0xyes"), "side": Side.YES, "event_title": "Test Event",
+            "event_slug": "test-event",
             "entry_price": Decimal("0.96"), "quantity": Decimal("50"),
             "detected_at": now, "entry_time": now, "current_price": Decimal("0.96"),
             "resolution_outcome": None, "exit_price": None, "pnl": None,

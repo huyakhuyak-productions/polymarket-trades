@@ -17,8 +17,8 @@ class SqliteOpportunityStore(OpportunityStorePort):
     async def save(self, opportunity: Opportunity) -> None:
         await self._db.execute(
             "INSERT INTO opportunities "
-            "(strategy_type, market_id, token_id, event_title, expected_profit, entry_price, detected_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "(strategy_type, market_id, token_id, event_title, expected_profit, entry_price, detected_at, event_slug) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 opportunity.strategy_type,
                 opportunity.market_id,
@@ -27,6 +27,7 @@ class SqliteOpportunityStore(OpportunityStorePort):
                 str(opportunity.expected_profit.value),
                 str(opportunity.entry_price),
                 opportunity.detected_at.isoformat(),
+                opportunity.event_slug,
             ),
         )
         await self._db.commit()
@@ -36,7 +37,7 @@ class SqliteOpportunityStore(OpportunityStorePort):
     ) -> Opportunity | None:
         async with self._db.execute(
             "SELECT strategy_type, market_id, token_id, event_title, expected_profit, "
-            "entry_price, detected_at "
+            "entry_price, detected_at, event_slug "
             "FROM opportunities "
             "WHERE strategy_type = ? AND market_id = ? AND token_id = ? "
             "ORDER BY rowid DESC LIMIT 1",
@@ -53,4 +54,5 @@ class SqliteOpportunityStore(OpportunityStorePort):
                 expected_profit=Money(Decimal(row[4])),
                 entry_price=Decimal(row[5]),
                 detected_at=datetime.fromisoformat(row[6]),
+                event_slug=row[7],
             )

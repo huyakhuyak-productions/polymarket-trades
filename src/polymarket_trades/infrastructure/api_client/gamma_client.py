@@ -113,6 +113,24 @@ class GammaClient:
         resp.raise_for_status()
         return _parse_event(resp.json())
 
+    async def fetch_event_slug_for_market(self, market_id: str) -> str:
+        """Look up the parent event slug for a given market ID.
+
+        Uses the list endpoint (/markets?id=X) because the single-market
+        endpoint (/markets/X) does not embed the parent event.
+        """
+        await self._limiter.acquire()
+        resp = await self._client.get(
+            f"{self._base_url}/markets", params={"id": market_id}
+        )
+        resp.raise_for_status()
+        results = resp.json()
+        if results and isinstance(results, list) and len(results) > 0:
+            events = results[0].get("events", [])
+            if events and isinstance(events, list):
+                return events[0].get("slug", "")
+        return ""
+
     async def is_market_resolved(self, market_id: str) -> tuple[bool, ResolutionOutcome | None]:
         await self._limiter.acquire()
         resp = await self._client.get(f"{self._base_url}/markets/{market_id}")

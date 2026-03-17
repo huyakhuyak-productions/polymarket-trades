@@ -29,6 +29,10 @@ report:
 positions:
     uv run python -m polymarket_trades positions
 
+# Backfill event slugs for old positions (one-time)
+backfill-slugs:
+    uv run python -m polymarket_trades backfill-slugs
+
 # Sync dependencies
 sync:
     uv sync

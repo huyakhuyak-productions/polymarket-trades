@@ -184,6 +184,15 @@ class TestNearCertainDetector:
         assert results[0].token_id == "0xyes-m1"
 
     @pytest.mark.asyncio
+    async def test_event_slug_is_populated(self, detector: NearCertainDetector) -> None:
+        """Opportunity event_slug is set from the parent event."""
+        market = _make_market(id="m1", yes_price="0.96", no_price="0.04")
+        event = _make_event(markets=[market], id="e1")
+        results = await detector.detect([event])
+        assert len(results) == 1
+        assert results[0].event_slug == "e1"
+
+    @pytest.mark.asyncio
     async def test_empty_events_returns_empty(self, detector: NearCertainDetector) -> None:
         """Empty event list returns empty opportunities."""
         results = await detector.detect([])

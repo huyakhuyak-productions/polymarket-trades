@@ -13,6 +13,7 @@ class Opportunity:
     event_title: str
     expected_profit: Money
     entry_price: Decimal
+    event_slug: str = ""
     market_liquidity: Decimal = Decimal("0")
     minutes_to_close: float = 0.0
     detected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))

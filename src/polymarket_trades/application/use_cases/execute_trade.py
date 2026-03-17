@@ -90,6 +90,7 @@ class ExecuteTrade:
             token_id=TokenId(opportunity.token_id),
             side=Side.YES,
             event_title=opportunity.event_title,
+            event_slug=opportunity.event_slug,
             entry_price=opportunity.entry_price,
             quantity=decision.max_quantity,
             detected_at=opportunity.detected_at,

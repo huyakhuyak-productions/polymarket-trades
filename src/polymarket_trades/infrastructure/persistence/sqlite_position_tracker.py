@@ -16,7 +16,7 @@ from polymarket_trades.domain.value_objects.trade_mode import PositionStatus, Tr
 _OPEN_STATUSES = ("IDENTIFIED", "ENTERED", "MONITORING")
 
 _ALL_COLUMNS = (
-    "id, opportunity_type, market_id, token_id, side, event_title, "
+    "id, opportunity_type, market_id, token_id, side, event_title, event_slug, "
     "entry_price, quantity, detected_at, entry_time, current_price, "
     "resolution_outcome, exit_price, pnl, fees_estimated, mode, status, "
     "created_at, updated_at"
@@ -31,19 +31,20 @@ def _row_to_position(row: tuple) -> Position:
         token_id=TokenId(row[3]),
         side=Side(row[4]),
         event_title=row[5],
-        entry_price=Decimal(row[6]),
-        quantity=Decimal(row[7]),
-        detected_at=datetime.fromisoformat(row[8]),
-        entry_time=datetime.fromisoformat(row[9]),
-        current_price=Decimal(row[10]),
-        resolution_outcome=ResolutionOutcome(row[11]) if row[11] else None,
-        exit_price=Decimal(row[12]) if row[12] else None,
-        pnl=Decimal(row[13]) if row[13] else None,
-        fees_estimated=Decimal(row[14]),
-        mode=TradeMode(row[15]),
-        status=PositionStatus(row[16]),
-        created_at=datetime.fromisoformat(row[17]),
-        updated_at=datetime.fromisoformat(row[18]),
+        event_slug=row[6],
+        entry_price=Decimal(row[7]),
+        quantity=Decimal(row[8]),
+        detected_at=datetime.fromisoformat(row[9]),
+        entry_time=datetime.fromisoformat(row[10]),
+        current_price=Decimal(row[11]),
+        resolution_outcome=ResolutionOutcome(row[12]) if row[12] else None,
+        exit_price=Decimal(row[13]) if row[13] else None,
+        pnl=Decimal(row[14]) if row[14] else None,
+        fees_estimated=Decimal(row[15]),
+        mode=TradeMode(row[16]),
+        status=PositionStatus(row[17]),
+        created_at=datetime.fromisoformat(row[18]),
+        updated_at=datetime.fromisoformat(row[19]),
     )
 
 
@@ -54,7 +55,7 @@ class SqlitePositionTracker(PositionTrackerPort):
     async def save_position(self, position: Position) -> None:
         await self._db.execute(
             f"INSERT INTO positions ({_ALL_COLUMNS}) "
-            f"VALUES ({','.join('?' for _ in range(19))})",
+            f"VALUES ({','.join('?' for _ in range(20))})",
             (
                 str(position.id),
                 position.opportunity_type,
@@ -62,6 +63,7 @@ class SqlitePositionTracker(PositionTrackerPort):
                 position.token_id.value,
                 position.side.value,
                 position.event_title,
+                position.event_slug,
                 str(position.entry_price),
                 str(position.quantity),
                 position.detected_at.isoformat(),
@@ -109,6 +111,13 @@ class SqlitePositionTracker(PositionTrackerPort):
                 position.updated_at.isoformat(),
                 str(position.id),
             ),
+        )
+        await self._db.commit()
+
+    async def update_event_slug(self, position_id: str, event_slug: str) -> None:
+        await self._db.execute(
+            "UPDATE positions SET event_slug = ? WHERE id = ?",
+            (event_slug, position_id),
         )
         await self._db.commit()
 
