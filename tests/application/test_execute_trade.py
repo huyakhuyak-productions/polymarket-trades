@@ -34,8 +34,8 @@ def _make_opportunity(
 def _make_risk_config() -> RiskConfig:
     return RiskConfig(
         total_capital=Decimal("1000"),
-        max_single_position_pct=Decimal("0.20"),
-        max_total_exposure_pct=Decimal("0.80"),
+        max_single_position_pct=Decimal("0.05"),
+        max_total_exposure_pct=Decimal("1.0"),
         min_profit_threshold=Money(Decimal("0.005")),
         min_minutes_to_close=60,
         min_market_liquidity=Decimal("100"),

@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     scan_interval_seconds: int = 300
     near_certain_threshold: Decimal = Decimal("0.95")
     min_profit_threshold: Decimal = Decimal("0.005")
-    max_single_position_pct: Decimal = Decimal("0.20")
-    max_total_exposure_pct: Decimal = Decimal("0.80")
+    max_single_position_pct: Decimal = Decimal("0.05")
+    max_total_exposure_pct: Decimal = Decimal("1.0")
     min_market_liquidity: Decimal = Decimal("100")
     min_minutes_to_close: int = 60
     order_timeout_seconds: int = 300
