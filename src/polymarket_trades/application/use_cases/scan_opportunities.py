@@ -59,5 +59,6 @@ class ScanOpportunities:
             await self._opp_store.save(opp)
             viable.append(opp)
 
+        viable.sort(key=lambda opp: opp.sort_key)
         logger.info("opportunities_viable", count=len(viable))
         return viable

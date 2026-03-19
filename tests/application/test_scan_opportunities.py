@@ -36,7 +36,11 @@ def _make_event(event_id: str = "e1") -> Event:
     )
 
 
-def _make_opportunity(market_id: str = "m1", token_id: str = "0xyes") -> Opportunity:
+def _make_opportunity(
+    market_id: str = "m1",
+    token_id: str = "0xyes",
+    minutes_to_close: float = 0.0,
+) -> Opportunity:
     return Opportunity(
         strategy_type="near_certain",
         market_id=market_id,
@@ -44,6 +48,7 @@ def _make_opportunity(market_id: str = "m1", token_id: str = "0xyes") -> Opportu
         event_title="Test",
         expected_profit=Money(Decimal("2.00")),
         entry_price=Decimal("0.96"),
+        minutes_to_close=minutes_to_close,
     )
 
 
@@ -225,3 +230,35 @@ class TestScanOpportunities:
 
         assert len(result) == 1
         opp_store.save.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_returns_opportunities_sorted_by_time_to_close(self):
+        event_discovery = AsyncMock()
+        event_discovery.fetch_active_events.side_effect = [
+            [_make_event()],
+            [],
+        ]
+
+        opp_far = _make_opportunity(market_id="far", token_id="0xfar", minutes_to_close=120.0)
+        opp_mid = _make_opportunity(market_id="mid", token_id="0xmid", minutes_to_close=60.0)
+        opp_soon = _make_opportunity(market_id="soon", token_id="0xsoon", minutes_to_close=15.0)
+
+        scanner = AsyncMock(spec=Scanner)
+        scanner.scan.return_value = [opp_far, opp_mid, opp_soon]
+
+        opp_store = AsyncMock()
+        opp_store.find_existing.return_value = None
+
+        pos_tracker = AsyncMock()
+        pos_tracker.get_position_by_market.return_value = None
+
+        uc = ScanOpportunities(
+            event_discovery=event_discovery,
+            scanner=scanner,
+            opportunity_store=opp_store,
+            position_tracker=pos_tracker,
+        )
+
+        result = await uc.execute()
+
+        assert [o.market_id for o in result] == ["soon", "mid", "far"]

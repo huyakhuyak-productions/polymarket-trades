@@ -19,3 +19,12 @@ class Opportunity:
     market_liquidity: Decimal = Decimal("0")
     minutes_to_close: float = 0.0
     detected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @property
+    def sort_key(self) -> tuple[float, float]:
+        """(minutes_to_close ASC, return_pct DESC) for capital-rotation priority."""
+        if self.entry_price == 0:
+            return_pct = float("inf")
+        else:
+            return_pct = float(self.expected_profit.value / self.entry_price)
+        return (self.minutes_to_close, -return_pct)
