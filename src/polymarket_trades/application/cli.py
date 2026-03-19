@@ -100,18 +100,21 @@ def report(
             table.add_column("Trades", justify="right")
             table.add_column("Wins", justify="right")
             table.add_column("Win %", justify="right")
-            table.add_column("Total P&L", justify="right", style="green")
-            table.add_column("Avg Return", justify="right")
+            table.add_column("Total P&L", justify="right")
+            table.add_column("Return %", justify="right")
+            table.add_column("Avg Ret %", justify="right")
 
             for r in reports:
                 pnl_style = "green" if r.total_pnl >= 0 else "red"
+                ret_style = "green" if r.total_return_pct >= 0 else "red"
                 table.add_row(
                     r.strategy,
                     str(r.trades),
                     str(r.wins),
                     f"{r.win_pct:.1f}%",
-                    f"[{pnl_style}]{r.total_pnl:.6f}[/{pnl_style}]",
-                    f"{r.avg_return_pct:.6f}",
+                    f"[{pnl_style}]{r.total_pnl:.2f}[/{pnl_style}]",
+                    f"[{ret_style}]{r.total_return_pct:+.2f}%[/{ret_style}]",
+                    f"{r.avg_return_pct:+.2f}%",
                 )
             console.print(table)
         finally:
@@ -151,15 +154,20 @@ def positions(
             table.add_column("Current", justify="right")
             table.add_column("Qty", justify="right")
             table.add_column("P&L", justify="right")
+            table.add_column("Return %", justify="right")
             table.add_column("Status")
             table.add_column("Mode")
             table.add_column("Link", style="blue")
 
             for pos in all_positions:
                 pnl_str = ""
+                ret_str = ""
                 if pos.pnl is not None:
                     pnl_style = "green" if pos.pnl >= 0 else "red"
                     pnl_str = f"[{pnl_style}]{pos.pnl:.4f}[/{pnl_style}]"
+                if pos.return_pct is not None:
+                    ret_style = "green" if pos.return_pct >= 0 else "red"
+                    ret_str = f"[{ret_style}]{pos.return_pct:+.2f}%[/{ret_style}]"
 
                 link = (
                     f"https://polymarket.com/event/{pos.event_slug}"
@@ -176,6 +184,7 @@ def positions(
                     str(pos.current_price),
                     f"{pos.quantity:.2f}",
                     pnl_str,
+                    ret_str,
                     pos.status.value,
                     pos.mode.value,
                     link,

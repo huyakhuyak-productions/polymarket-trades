@@ -61,12 +61,18 @@ class TestMonitorPositions:
         assert arb.trades == 1
         assert arb.wins == 1
         assert arb.total_pnl == Decimal("0.80")
+        assert arb.total_cost == Decimal("48.00")
+        # 0.80 / 48 * 100 ≈ 1.667%
+        assert abs(arb.total_return_pct - Decimal("1.667")) < Decimal("0.01")
 
         nc = reports[1]
         assert nc.strategy == "near_certain"
         assert nc.trades == 2
         assert nc.wins == 1
         assert nc.total_pnl == Decimal("1.00")
+        assert nc.total_cost == Decimal("96.00")
+        # 1.00 / 96 * 100 ≈ 1.042%
+        assert abs(nc.total_return_pct - Decimal("1.042")) < Decimal("0.01")
 
     @pytest.mark.asyncio
     async def test_empty_positions(self):

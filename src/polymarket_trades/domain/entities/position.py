@@ -44,6 +44,12 @@ class Position:
     def notional_value(self) -> Decimal:
         return self.entry_price * self.quantity
 
+    @property
+    def return_pct(self) -> Decimal | None:
+        if self.pnl is None or self.notional_value == 0:
+            return None
+        return (self.pnl / self.notional_value) * 100
+
     def _is_winning_outcome(self, outcome: ResolutionOutcome) -> bool:
         return (
             (self.side == Side.YES and outcome == ResolutionOutcome.YES)

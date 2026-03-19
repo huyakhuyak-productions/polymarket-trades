@@ -173,3 +173,13 @@ class TestPosition:
     def test_notional_value(self):
         p = self._make_position(entry_price=Decimal("0.96"), quantity=Decimal("50"))
         assert p.notional_value == Decimal("48.00")
+
+    def test_return_pct_with_pnl(self):
+        p = self._make_position(entry_price=Decimal("0.96"), quantity=Decimal("50"), pnl=Decimal("1.90"))
+        # 1.90 / 48.00 * 100 ≈ 3.958%
+        assert p.return_pct is not None
+        assert abs(p.return_pct - Decimal("3.958")) < Decimal("0.01")
+
+    def test_return_pct_none_without_pnl(self):
+        p = self._make_position(pnl=None)
+        assert p.return_pct is None
