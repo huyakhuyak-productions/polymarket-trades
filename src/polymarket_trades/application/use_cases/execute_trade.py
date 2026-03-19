@@ -12,7 +12,6 @@ from polymarket_trades.domain.ports.pricing import PricingPort
 from polymarket_trades.domain.services.fee_calculator import FeeCalculator, MarketCategory
 from polymarket_trades.domain.services.risk_manager import RiskManager
 from polymarket_trades.domain.strategies.opportunity import Opportunity
-from polymarket_trades.domain.value_objects.outcome import Side
 from polymarket_trades.domain.value_objects.price import Price
 from polymarket_trades.domain.value_objects.token_id import TokenId
 from polymarket_trades.domain.value_objects.trade_mode import PositionStatus, TradeMode
@@ -88,7 +87,7 @@ class ExecuteTrade:
             opportunity_type=opportunity.strategy_type,
             market_id=opportunity.market_id,
             token_id=TokenId(opportunity.token_id),
-            side=Side.YES,
+            side=opportunity.side,
             event_title=opportunity.event_title,
             event_slug=opportunity.event_slug,
             entry_price=opportunity.entry_price,

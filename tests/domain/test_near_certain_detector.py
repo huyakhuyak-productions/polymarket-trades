@@ -9,6 +9,7 @@ from polymarket_trades.domain.entities.market import Market
 from polymarket_trades.domain.services.fee_calculator import FeeCalculator
 from polymarket_trades.domain.strategies.near_certain.detector import NearCertainDetector
 from polymarket_trades.domain.value_objects.money import Money
+from polymarket_trades.domain.value_objects.outcome import Side
 from polymarket_trades.domain.value_objects.price import Price
 from polymarket_trades.domain.value_objects.token_id import TokenId
 
@@ -149,7 +150,7 @@ class TestNearCertainDetector:
         assert len(results) == 1
         opp = results[0]
         assert opp.expected_profit.value > Decimal("0")
-        assert opp.yes_price == Decimal("0.96")
+        assert opp.near_certain_price == Decimal("0.96")
         assert opp.expected_return_pct > Decimal("0")
 
     @pytest.mark.asyncio
@@ -176,12 +177,13 @@ class TestNearCertainDetector:
 
     @pytest.mark.asyncio
     async def test_opportunity_token_id_matches_yes_token(self, detector: NearCertainDetector) -> None:
-        """Opportunity token_id matches the market's yes_token_id."""
+        """Opportunity token_id matches the market's yes_token_id and side is YES."""
         market = _make_market(id="m1", yes_price="0.96", no_price="0.04")
         event = _make_event(markets=[market])
         results = await detector.detect([event])
         assert len(results) == 1
         assert results[0].token_id == "0xyes-m1"
+        assert results[0].side == Side.YES
 
     @pytest.mark.asyncio
     async def test_event_slug_is_populated(self, detector: NearCertainDetector) -> None:
@@ -197,3 +199,56 @@ class TestNearCertainDetector:
         """Empty event list returns empty opportunities."""
         results = await detector.detect([])
         assert results == []
+
+    @pytest.mark.asyncio
+    async def test_detects_no_side_market_above_threshold(self, detector: NearCertainDetector) -> None:
+        """Detects NO side when NO price >= threshold (YES=$0.03, NO=$0.97)."""
+        market = _make_market(id="m1", yes_price="0.03", no_price="0.97")
+        event = _make_event(markets=[market])
+        results = await detector.detect([event])
+        assert len(results) == 1
+        opp = results[0]
+        assert opp.side == Side.NO
+        assert opp.token_id == "0xno-m1"
+        assert opp.entry_price == Decimal("0.97")
+
+    @pytest.mark.asyncio
+    async def test_no_side_profit_correct_for_fee_exempt(self, detector: NearCertainDetector) -> None:
+        """For fee-exempt NO side: profit = 1.0 - no_price."""
+        market = _make_market(id="m1", yes_price="0.03", no_price="0.97", category="politics")
+        event = _make_event(markets=[market])
+        results = await detector.detect([event])
+        assert len(results) == 1
+        # fee exempt: profit_per_share = 1.0 - 0.97 - 0.0 = 0.03
+        assert results[0].expected_profit == Money(Decimal("0.03"))
+
+    @pytest.mark.asyncio
+    async def test_no_side_skips_below_threshold(self, detector: NearCertainDetector) -> None:
+        """NO at 0.80 is below threshold — not detected."""
+        market = _make_market(id="m1", yes_price="0.20", no_price="0.80")
+        event = _make_event(markets=[market])
+        results = await detector.detect([event])
+        assert results == []
+
+    @pytest.mark.asyncio
+    async def test_detects_yes_and_no_across_different_markets(self, detector: NearCertainDetector) -> None:
+        """Two markets in one event: one YES-high, one NO-high → both detected."""
+        market_yes = _make_market(id="m1", yes_price="0.96", no_price="0.04")
+        market_no = _make_market(id="m2", yes_price="0.03", no_price="0.97")
+        event = _make_event(markets=[market_yes, market_no])
+        results = await detector.detect([event])
+        assert len(results) == 2
+        by_side = {r.side: r for r in results}
+        assert Side.YES in by_side
+        assert Side.NO in by_side
+        assert by_side[Side.YES].token_id == "0xyes-m1"
+        assert by_side[Side.NO].token_id == "0xno-m2"
+
+    @pytest.mark.asyncio
+    async def test_no_side_opportunity_has_correct_near_certain_price(self, detector: NearCertainDetector) -> None:
+        """NO-side opportunity has near_certain_price set to the NO price."""
+        market = _make_market(id="m1", yes_price="0.03", no_price="0.97", category="politics")
+        event = _make_event(markets=[market])
+        results = await detector.detect([event])
+        assert len(results) == 1
+        assert results[0].near_certain_price == Decimal("0.97")

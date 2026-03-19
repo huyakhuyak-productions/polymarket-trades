@@ -9,6 +9,7 @@ from polymarket_trades.domain.entities.position import Position
 from polymarket_trades.domain.strategies.opportunity import Opportunity
 from polymarket_trades.domain.value_objects.money import Money
 from polymarket_trades.domain.value_objects.outcome import Side
+from polymarket_trades.domain.value_objects.price import Price
 from polymarket_trades.domain.value_objects.token_id import TokenId
 from polymarket_trades.domain.value_objects.trade_mode import PositionStatus, TradeMode
 from polymarket_trades.infrastructure.persistence.migrator import run_migrations
@@ -124,6 +125,15 @@ class TestSqliteOpportunityStore:
         found = await store.find_existing("near_certain", "m1", "0xyes")
         assert found is not None
         assert found.event_slug == "test-slug"
+
+    @pytest.mark.asyncio
+    async def test_opportunity_side_roundtrip(self, db):
+        store = SqliteOpportunityStore(db)
+        opp = _make_opportunity(token_id="0xno", side=Side.NO)
+        await store.save(opp)
+        found = await store.find_existing("near_certain", "m1", "0xno")
+        assert found is not None
+        assert found.side == Side.NO
 
 
 class TestSqlitePositionTracker:

@@ -4,6 +4,7 @@ from polymarket_trades.domain.entities.event import Event
 from polymarket_trades.domain.services.fee_calculator import FeeCalculator, MarketCategory
 from polymarket_trades.domain.strategies.near_certain.opportunity import NearCertainOpportunity
 from polymarket_trades.domain.value_objects.money import Money
+from polymarket_trades.domain.value_objects.outcome import Side
 
 
 class NearCertainDetector:
@@ -25,35 +26,42 @@ class NearCertainDetector:
         opportunities: list[NearCertainOpportunity] = []
         for event in events:
             for market in event.tradeable_markets:
-                if market.yes_price.value < self._threshold:
-                    continue
                 if market.minutes_to_close < self._min_minutes:
                     continue
                 if market.liquidity < self._min_liquidity:
                     continue
-                category = MarketCategory.from_string(market.category)
-                fee = self._fee_calc.estimate(
-                    price=market.yes_price,
-                    quantity=Decimal("1"),
-                    category=category,
-                    is_maker=False,
-                )
-                profit_per_share = Decimal("1.0") - market.yes_price.value - fee.value
-                if profit_per_share <= self._min_profit.value:
-                    continue
-                opportunities.append(
-                    NearCertainOpportunity(
-                        strategy_type="near_certain",
-                        market_id=market.id,
-                        token_id=market.yes_token_id.value,
-                        event_title=event.title,
-                        expected_profit=Money(profit_per_share),
-                        entry_price=market.yes_price.value,
-                        event_slug=event.slug,
-                        market_liquidity=market.liquidity,
-                        minutes_to_close=market.minutes_to_close,
-                        yes_price=market.yes_price.value,
-                        expected_return_pct=profit_per_share / market.yes_price.value * 100,
+
+                sides = [
+                    (Side.YES, market.yes_price, market.yes_token_id),
+                    (Side.NO, market.no_price, market.no_token_id),
+                ]
+                for side, price, token_id in sides:
+                    if price.value < self._threshold:
+                        continue
+                    category = MarketCategory.from_string(market.category)
+                    fee = self._fee_calc.estimate(
+                        price=price,
+                        quantity=Decimal("1"),
+                        category=category,
+                        is_maker=False,
                     )
-                )
+                    profit_per_share = Decimal("1.0") - price.value - fee.value
+                    if profit_per_share <= self._min_profit.value:
+                        continue
+                    opportunities.append(
+                        NearCertainOpportunity(
+                            strategy_type="near_certain",
+                            market_id=market.id,
+                            token_id=token_id.value,
+                            event_title=event.title,
+                            expected_profit=Money(profit_per_share),
+                            entry_price=price.value,
+                            side=side,
+                            event_slug=event.slug,
+                            market_liquidity=market.liquidity,
+                            minutes_to_close=market.minutes_to_close,
+                            near_certain_price=price.value,
+                            expected_return_pct=profit_per_share / price.value * 100,
+                        )
+                    )
         return opportunities

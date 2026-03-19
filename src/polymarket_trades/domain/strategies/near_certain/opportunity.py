@@ -6,5 +6,5 @@ from polymarket_trades.domain.strategies.opportunity import Opportunity
 
 @dataclass
 class NearCertainOpportunity(Opportunity):
-    yes_price: Decimal = Decimal("0")
+    near_certain_price: Decimal = Decimal("0")
     expected_return_pct: Decimal = Decimal("0")

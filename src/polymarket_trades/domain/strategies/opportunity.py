@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from decimal import Decimal
 from polymarket_trades.domain.value_objects.money import Money
+from polymarket_trades.domain.value_objects.outcome import Side
 
 @dataclass
 class Opportunity:
@@ -13,6 +14,7 @@ class Opportunity:
     event_title: str
     expected_profit: Money
     entry_price: Decimal
+    side: Side = Side.YES
     event_slug: str = ""
     market_liquidity: Decimal = Decimal("0")
     minutes_to_close: float = 0.0
