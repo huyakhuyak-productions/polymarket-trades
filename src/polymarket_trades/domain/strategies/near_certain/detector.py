@@ -60,6 +60,7 @@ class NearCertainDetector:
                             event_slug=event.slug,
                             market_liquidity=market.liquidity,
                             minutes_to_close=market.minutes_to_close,
+                            market_end_date=market.end_date,
                             near_certain_price=price.value,
                             expected_return_pct=profit_per_share / price.value * 100,
                         )

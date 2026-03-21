@@ -221,3 +221,20 @@ class TestSqlitePositionTracker:
         await tracker.save_position(pos)
         loaded = await tracker.get_position_by_market("m1")
         assert loaded.event_slug == "test-event"
+
+    @pytest.mark.asyncio
+    async def test_market_end_date_roundtrip(self, db):
+        tracker = SqlitePositionTracker(db)
+        end = datetime(2026, 6, 15, 18, 0, tzinfo=timezone.utc)
+        pos = _make_position(market_end_date=end)
+        await tracker.save_position(pos)
+        loaded = await tracker.get_position_by_market("m1")
+        assert loaded.market_end_date == end
+
+    @pytest.mark.asyncio
+    async def test_market_end_date_defaults_to_none(self, db):
+        tracker = SqlitePositionTracker(db)
+        pos = _make_position()
+        await tracker.save_position(pos)
+        loaded = await tracker.get_position_by_market("m1")
+        assert loaded.market_end_date is None

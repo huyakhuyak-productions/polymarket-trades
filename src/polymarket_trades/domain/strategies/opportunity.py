@@ -18,6 +18,7 @@ class Opportunity:
     event_slug: str = ""
     market_liquidity: Decimal = Decimal("0")
     minutes_to_close: float = 0.0
+    market_end_date: datetime | None = None
     detected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     @property

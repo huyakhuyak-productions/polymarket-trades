@@ -19,7 +19,7 @@ _ALL_COLUMNS = (
     "id, opportunity_type, market_id, token_id, side, event_title, event_slug, "
     "entry_price, quantity, detected_at, entry_time, current_price, "
     "resolution_outcome, exit_price, pnl, fees_estimated, mode, status, "
-    "created_at, updated_at"
+    "created_at, updated_at, market_end_date"
 )
 
 
@@ -45,6 +45,7 @@ def _row_to_position(row: tuple) -> Position:
         status=PositionStatus(row[17]),
         created_at=datetime.fromisoformat(row[18]),
         updated_at=datetime.fromisoformat(row[19]),
+        market_end_date=datetime.fromisoformat(row[20]) if row[20] else None,
     )
 
 
@@ -55,7 +56,7 @@ class SqlitePositionTracker(PositionTrackerPort):
     async def save_position(self, position: Position) -> None:
         await self._db.execute(
             f"INSERT INTO positions ({_ALL_COLUMNS}) "
-            f"VALUES ({','.join('?' for _ in range(20))})",
+            f"VALUES ({','.join('?' for _ in range(21))})",
             (
                 str(position.id),
                 position.opportunity_type,
@@ -77,6 +78,7 @@ class SqlitePositionTracker(PositionTrackerPort):
                 position.status.value,
                 position.created_at.isoformat(),
                 position.updated_at.isoformat(),
+                position.market_end_date.isoformat() if position.market_end_date else None,
             ),
         )
         await self._db.commit()

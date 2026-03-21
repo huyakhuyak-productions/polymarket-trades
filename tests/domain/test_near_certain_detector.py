@@ -252,3 +252,12 @@ class TestNearCertainDetector:
         results = await detector.detect([event])
         assert len(results) == 1
         assert results[0].near_certain_price == Decimal("0.97")
+
+    @pytest.mark.asyncio
+    async def test_market_end_date_is_propagated(self, detector: NearCertainDetector) -> None:
+        """Opportunity market_end_date is set from the market's end_date."""
+        market = _make_market(id="m1", yes_price="0.96", no_price="0.04")
+        event = _make_event(markets=[market])
+        results = await detector.detect([event])
+        assert len(results) == 1
+        assert results[0].market_end_date == _FAR_FUTURE

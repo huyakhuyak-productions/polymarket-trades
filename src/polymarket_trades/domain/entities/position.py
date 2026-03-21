@@ -33,6 +33,7 @@ class Position:
     mode: TradeMode
     status: PositionStatus
     event_slug: str = ""
+    market_end_date: datetime | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 

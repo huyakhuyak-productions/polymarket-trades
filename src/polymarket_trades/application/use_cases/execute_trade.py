@@ -90,6 +90,7 @@ class ExecuteTrade:
             side=opportunity.side,
             event_title=opportunity.event_title,
             event_slug=opportunity.event_slug,
+            market_end_date=opportunity.market_end_date,
             entry_price=opportunity.entry_price,
             quantity=decision.max_quantity,
             detected_at=opportunity.detected_at,

@@ -43,6 +43,8 @@ class NegRiskDiscountDetector:
             profit_per_unit = Decimal("1.0") - total_cost - total_fees
             if profit_per_unit <= self._min_profit.value:
                 continue
+            end_dates = [m.end_date for m in tradeable if m.end_date is not None]
+            earliest_end = min(end_dates) if end_dates else None
             opportunities.append(
                 NegRiskOpportunity(
                     strategy_type="neg_risk_discount",
@@ -52,6 +54,7 @@ class NegRiskDiscountDetector:
                     expected_profit=Money(profit_per_unit),
                     entry_price=total_cost,
                     event_slug=event.slug,
+                    market_end_date=earliest_end,
                     total_cost=total_cost,
                     num_outcomes=len(tradeable),
                     leg_token_ids=[m.yes_token_id.value for m in tradeable],
