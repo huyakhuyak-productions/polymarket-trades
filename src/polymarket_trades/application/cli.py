@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timezone
 
 import typer
 from rich.console import Console
@@ -145,6 +146,10 @@ def positions(
                 console.print("[yellow]No positions found.[/yellow]")
                 return
 
+            all_positions.sort(
+                key=lambda p: p.market_end_date or datetime.max.replace(tzinfo=timezone.utc)
+            )
+
             table = Table(title=f"Positions ({len(all_positions)} total)")
             table.add_column("ID", style="dim")
             table.add_column("Strategy", style="cyan")
@@ -155,6 +160,7 @@ def positions(
             table.add_column("Qty", justify="right")
             table.add_column("P&L", justify="right")
             table.add_column("Return %", justify="right")
+            table.add_column("Resolves")
             table.add_column("Status")
             table.add_column("Mode")
             table.add_column("Link", style="blue")
@@ -175,6 +181,12 @@ def positions(
                     else ""
                 )
 
+                resolves_str = (
+                    pos.market_end_date.strftime("%Y-%m-%d %H:%M")
+                    if pos.market_end_date
+                    else "—"
+                )
+
                 table.add_row(
                     str(pos.id)[:8],
                     pos.opportunity_type,
@@ -185,6 +197,7 @@ def positions(
                     f"{pos.quantity:.2f}",
                     pnl_str,
                     ret_str,
+                    resolves_str,
                     pos.status.value,
                     pos.mode.value,
                     link,
