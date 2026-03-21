@@ -9,6 +9,8 @@ test *args:
 test-v *args:
     uv run pytest --verbose {{args}}
 
+alias trade := run
+
 # Run the bot in paper mode (default)
 run:
     uv run python -m polymarket_trades run --dry-run

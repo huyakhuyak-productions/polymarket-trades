@@ -14,7 +14,7 @@ class NearCertainDetector:
         price_threshold: Decimal = Decimal("0.95"),
         min_profit_threshold: Money = Money(Decimal("0.005")),
         min_liquidity: Decimal = Decimal("100"),
-        min_minutes_to_close: int = 60,
+        min_minutes_to_close: int = 10,
     ) -> None:
         self._fee_calc = fee_calculator
         self._threshold = price_threshold

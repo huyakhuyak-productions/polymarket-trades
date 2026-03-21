@@ -31,7 +31,7 @@ class TestRiskManager:
     def setup_method(self):
         self.config = RiskConfig(total_capital=Decimal("1000"), max_single_position_pct=Decimal("0.20"),
             max_total_exposure_pct=Decimal("0.80"), min_profit_threshold=Money(Decimal("0.50")),
-            min_minutes_to_close=60, min_market_liquidity=Decimal("100"))
+            min_minutes_to_close=10, min_market_liquidity=Decimal("100"))
         self.rm = RiskManager(self.config)
 
     def test_approve_valid_opportunity(self):
@@ -53,7 +53,7 @@ class TestRiskManager:
 
     def test_reject_too_close_to_resolution(self):
         decision = self.rm.evaluate(_make_opportunity(), current_positions=[],
-            market_liquidity=Decimal("5000"), minutes_to_close=30)
+            market_liquidity=Decimal("5000"), minutes_to_close=5)
         assert decision.approved is False
         assert "close" in decision.reason.lower()
 

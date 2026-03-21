@@ -10,12 +10,12 @@ class Settings(BaseSettings):
     scan_interval_seconds: int = 300
     near_certain_threshold: Decimal = Decimal("0.95")
     min_profit_threshold: Decimal = Decimal("0.005")
-    max_single_position_pct: Decimal = Decimal("0.05")
+    max_single_position_pct: Decimal = Decimal("0.025")
     max_total_exposure_pct: Decimal = Decimal("1.0")
     min_market_liquidity: Decimal = Decimal("100")
-    min_minutes_to_close: int = 60
+    min_minutes_to_close: int = 10
     order_timeout_seconds: int = 300
-    total_capital: Decimal = Decimal("1000")
+    total_capital: Decimal = Decimal("2000")
     trade_mode: TradeMode = TradeMode.PAPER
     polymarket_private_key: str = ""
     crypto_fee_rate: Decimal = Decimal("0.25")

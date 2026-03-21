@@ -37,7 +37,7 @@ def _make_risk_config() -> RiskConfig:
         max_single_position_pct=Decimal("0.05"),
         max_total_exposure_pct=Decimal("1.0"),
         min_profit_threshold=Money(Decimal("0.005")),
-        min_minutes_to_close=60,
+        min_minutes_to_close=10,
         min_market_liquidity=Decimal("100"),
     )
 
@@ -208,7 +208,7 @@ class TestExecuteTrade:
         result = await uc.execute(
             opportunity=opp,
             market_liquidity=Decimal("500"),
-            minutes_to_close=30.0,  # Below minimum 60
+            minutes_to_close=5.0,  # Below minimum 10
         )
 
         assert result is False
