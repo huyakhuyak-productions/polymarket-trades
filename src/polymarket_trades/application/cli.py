@@ -276,3 +276,72 @@ def backfill_slugs(
             await close_container(container)
 
     asyncio.run(_backfill())
+
+
+@app.command(name="backfill-end-dates")
+def backfill_end_dates(
+    log_level: str = typer.Option("WARNING", "--log-level", help="Logging level"),
+) -> None:
+    """Backfill market_end_date for positions that are missing it (one-time migration)."""
+    configure_logging(log_level=log_level)
+
+    async def _backfill() -> None:
+        container = await build_container(settings=Settings(log_level=log_level))
+        try:
+            gamma = container._gamma_client
+            if gamma is None:
+                console.print("[red]Gamma client not available.[/red]")
+                return
+
+            all_positions = await container.position_tracker.get_all_positions()
+            missing = [p for p in all_positions if p.market_end_date is None]
+            if not missing:
+                console.print("[green]All positions already have market_end_date.[/green]")
+                return
+
+            console.print(f"Found {len(missing)} positions missing market_end_date.")
+
+            seen: dict[str, datetime | None] = {}
+            updated = 0
+            errors = 0
+
+            for pos in missing:
+                if pos.market_id in seen:
+                    end_date = seen[pos.market_id]
+                else:
+                    try:
+                        if pos.opportunity_type == "neg_risk_discount":
+                            event = await gamma.fetch_event_by_id(pos.market_id)
+                            dates = [m.end_date for m in event.markets if m.end_date]
+                            end_date = min(dates) if dates else None
+                        else:
+                            end_date = await gamma.fetch_market_end_date(pos.market_id)
+                        seen[pos.market_id] = end_date
+                    except Exception as exc:
+                        console.print(
+                            f"[yellow]Failed to fetch end_date for {pos.market_id}: {exc}[/yellow]"
+                        )
+                        errors += 1
+                        continue
+
+                if end_date is not None:
+                    await container.position_tracker.update_market_end_date(
+                        str(pos.id), end_date
+                    )
+                    updated += 1
+                    console.print(
+                        f"  [green]Updated[/green] {str(pos.id)[:8]} → {end_date.strftime('%Y-%m-%d %H:%M')}"
+                    )
+                else:
+                    console.print(
+                        f"  [yellow]No end_date found for {str(pos.id)[:8]} (market_id={pos.market_id})[/yellow]"
+                    )
+
+            console.print(
+                f"\n[bold]Done:[/bold] {updated} updated, {errors} errors, "
+                f"{len(missing) - updated - errors} no end_date found."
+            )
+        finally:
+            await close_container(container)
+
+    asyncio.run(_backfill())

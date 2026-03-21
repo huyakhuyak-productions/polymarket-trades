@@ -123,6 +123,15 @@ class SqlitePositionTracker(PositionTrackerPort):
         )
         await self._db.commit()
 
+    async def update_market_end_date(
+        self, position_id: str, market_end_date: datetime | None
+    ) -> None:
+        await self._db.execute(
+            "UPDATE positions SET market_end_date = ? WHERE id = ?",
+            (market_end_date.isoformat() if market_end_date else None, position_id),
+        )
+        await self._db.commit()
+
     async def get_all_positions(self, mode: TradeMode | None = None) -> list[Position]:
         if mode:
             async with self._db.execute(

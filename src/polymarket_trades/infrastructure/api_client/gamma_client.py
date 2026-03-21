@@ -131,6 +131,12 @@ class GammaClient:
                 return events[0].get("slug", "")
         return ""
 
+    async def fetch_market_end_date(self, market_id: str) -> datetime | None:
+        await self._limiter.acquire()
+        resp = await self._client.get(f"{self._base_url}/markets/{market_id}")
+        resp.raise_for_status()
+        return _parse_datetime(resp.json().get("endDate"))
+
     async def is_market_resolved(self, market_id: str) -> tuple[bool, ResolutionOutcome | None]:
         await self._limiter.acquire()
         resp = await self._client.get(f"{self._base_url}/markets/{market_id}")

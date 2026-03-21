@@ -33,6 +33,10 @@ positions:
 backfill-slugs:
     uv run python -m polymarket_trades backfill-slugs
 
+# Backfill market end dates for old positions (one-time)
+backfill-end-dates:
+    uv run python -m polymarket_trades backfill-end-dates
+
 # Sync dependencies
 sync:
     uv sync
